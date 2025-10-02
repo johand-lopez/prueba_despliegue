@@ -6,11 +6,16 @@ import geopandas as gpd
 import plotly.express as px
 import json
 import numpy as np
-import branca.colormap as cm  # para la leyenda
+import branca.colormap as cm
+import dash_bootstrap_components as dbc  # 👈 nuevo
 
 # =============================
 #   Mortalidad en Antioquia – Dash
 # =============================
+
+# Usamos un tema de Bootstrap (puedes probar otros: FLATLY, CYBORG, LUX...)
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
+server = app.server
 
 # 1. Lectura de datos
 ruta_dataset = "data/Mortalidad_General_en_el_departamento_de_Antioquia_desde_2005_20250915.csv"
@@ -34,30 +39,45 @@ df_merge = dataset_shapefile.merge(dataset_final, left_on="MPIO_CDPMP", right_on
 lista_anios = ["Todos los años"] + sorted(df_merge["Año"].unique().tolist())
 
 # =============================
-#   App Dash
+#   Layout con Bootstrap
 # =============================
-app = dash.Dash(__name__)
-server = app.server
-
-app.layout = html.Div([
+app.layout = dbc.Container([
     dcc.Tabs([
 
         # ----- Contexto -----
         dcc.Tab(label="Contexto", children=[
-            html.H2("Contexto del proyecto"),
-            html.P("Este proyecto realiza un análisis georreferenciado de la mortalidad en Antioquia, "
-                   "a partir de registros municipales de defunciones entre 2005 y 2021."),
-            html.H3("Objetivo del análisis"),
-            html.Ul([
-                html.Li("Visualizar la distribución espacial de la mortalidad."),
-                html.Li("Identificar patrones territoriales de salud y acceso a servicios."),
-                html.Li("Generar mapas coropléticos y gráficas para facilitar la comprensión.")
-            ]),
-            html.H3("Fuente del dataset"),
-            html.A("Datos Abiertos de Colombia",
-                   href="https://www.datos.gov.co/Salud-y-Protecci-n-Social/Mortalidad-General-en-el-departamento-de-Antioquia/fuc4-tvui/about_data",
-                   target="_blank"),
-            html.H5("Autor: Johan David Diaz Lopez")
+            dbc.Container([
+                html.H2("Contexto del proyecto", className="mt-4"),
+                html.P("Este proyecto realiza un análisis georreferenciado de la mortalidad en el departamento de Antioquia, "
+                       "a partir de registros municipales de defunciones ocurridas entre 2005 y 2021. El trabajo combina datos "
+                       "estadísticos (número de casos de defunción y tasa de mortalidad por mil habitantes) con herramientas de "
+                       "análisis espacial, permitiendo visualizar patrones y diferencias entre municipios y subregiones.",
+                       className="fs-5"),
+
+                html.H3("Objetivo del análisis", className="mt-3"),
+                html.P("El objetivo de este trabajo es integrar y analizar la información de mortalidad en el departamento de Antioquia "
+                       "de manera espacial, utilizando herramientas de georreferenciación. A partir de los datos de defunciones y de la "
+                       "tasa de mortalidad por cada mil habitantes en cada municipio, junto con las geometrías oficiales de los límites "
+                       "municipales, se busca:", className="fs-5"),
+
+                html.Ul([
+                    html.Li("Visualizar la distribución espacial de la mortalidad en los municipios de Antioquia."),
+                    html.Li("Identificar patrones territoriales que puedan reflejar diferencias en las condiciones de salud, acceso a servicios médicos o características demográficas."),
+                    html.Li("Generar mapas coropléticos y otras representaciones gráficas que faciliten la comprensión de las áreas con mayor o menor riesgo de mortalidad.")
+                ], className="fs-5"),
+
+                html.H3("Fuente del dataset", className="mt-3"),
+                html.P("Los datos utilizados en este proyecto provienen del portal oficial de "
+                       "Datos Abiertos de Colombia.", className="fs-5"),
+
+                html.A("https://www.datos.gov.co/Salud-y-Protecci-n-Social/Mortalidad-General-en-el-departamento-de-Antioquia/fuc4-tvui/about_data",
+                       href="https://www.datos.gov.co/Salud-y-Protecci-n-Social/Mortalidad-General-en-el-departamento-de-Antioquia/fuc4-tvui/about_data",
+                       target="_blank", className="fs-5 text-primary"),
+
+                html.Br(),
+                html.Br(),
+                html.P("Autor: Johan David Diaz Lopez", className="fw-bold fs-5")
+            ], fluid=True)
         ]),
 
         # ----- Tabla de Datos -----
@@ -131,7 +151,7 @@ app.layout = html.Div([
             ])
         ])
     ])
-])
+], fluid=True)
 
 # =============================
 #   Callbacks
