@@ -7,13 +7,13 @@ import plotly.express as px
 import json
 import numpy as np
 import branca.colormap as cm
-import dash_bootstrap_components as dbc  # 👈 Bootstrap
+import dash_bootstrap_components as dbc  # 👈 nuevo
 
 # =============================
 #   Mortalidad en Antioquia – Dash
 # =============================
 
-# Usamos un tema azul elegante de Bootstrap
+# Usamos un tema de Bootstrap (puedes probar otros: FLATLY, CYBORG, LUX...)
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 server = app.server
 
@@ -52,31 +52,31 @@ app.layout = dbc.Container([
                        "a partir de registros municipales de defunciones ocurridas entre 2005 y 2021. El trabajo combina datos "
                        "estadísticos (número de casos de defunción y tasa de mortalidad por mil habitantes) con herramientas de "
                        "análisis espacial, permitiendo visualizar patrones y diferencias entre municipios y subregiones.",
-                       className="fs-6"),
+                       className="fs-5"),
 
                 html.H3("Objetivo del análisis", className="mt-3"),
                 html.P("El objetivo de este trabajo es integrar y analizar la información de mortalidad en el departamento de Antioquia "
                        "de manera espacial, utilizando herramientas de georreferenciación. A partir de los datos de defunciones y de la "
                        "tasa de mortalidad por cada mil habitantes en cada municipio, junto con las geometrías oficiales de los límites "
-                       "municipales, se busca:", className="fs-6"),
+                       "municipales, se busca:", className="fs-5"),
 
                 html.Ul([
                     html.Li("Visualizar la distribución espacial de la mortalidad en los municipios de Antioquia."),
                     html.Li("Identificar patrones territoriales que puedan reflejar diferencias en las condiciones de salud, acceso a servicios médicos o características demográficas."),
                     html.Li("Generar mapas coropléticos y otras representaciones gráficas que faciliten la comprensión de las áreas con mayor o menor riesgo de mortalidad.")
-                ], className="fs-6"),
+                ], className="fs-5"),
 
                 html.H3("Fuente del dataset", className="mt-3"),
                 html.P("Los datos utilizados en este proyecto provienen del portal oficial de "
-                       "Datos Abiertos de Colombia.", className="fs-6"),
+                       "Datos Abiertos de Colombia.", className="fs-5"),
 
                 html.A("https://www.datos.gov.co/Salud-y-Protecci-n-Social/Mortalidad-General-en-el-departamento-de-Antioquia/fuc4-tvui/about_data",
                        href="https://www.datos.gov.co/Salud-y-Protecci-n-Social/Mortalidad-General-en-el-departamento-de-Antioquia/fuc4-tvui/about_data",
-                       target="_blank", className="fs-6 text-primary"),
+                       target="_blank", className="fs-5 text-primary"),
 
                 html.Br(),
                 html.Br(),
-                html.P("Autor: Johan David Diaz Lopez", className="fw-bold fs-6")
+                html.P("Autor: Johan David Diaz Lopez", className="fw-bold fs-5")
             ], fluid=True)
         ]),
 
@@ -179,7 +179,7 @@ def update_summary(_):
             df.append({"Variable": col, "Estadistico": k, "Valor": round(v, 2)})
     return df
 
-# ---- Mapa Tasa ----
+# ---- Mapas ----
 @app.callback(
     Output("mapa_tasa", "children"),
     Input("anio_tasa", "value")
@@ -194,9 +194,10 @@ def update_mapa_tasa(anio):
 
     values = df["TasaXMilHabitantes"]
     min_val, max_val = values.min(), values.max()
-    cmap = cm.linear.Reds_09.scale(min_val, max_val)  # 🔴 rojo gradiente
+    cmap = cm.linear.YlOrRd_09.scale(min_val, max_val)
 
     geojson = json.loads(df.to_json())
+
     for feature in geojson["features"]:
         municipio = feature["properties"]["NombreMunicipio"]
         valor = feature["properties"]["TasaXMilHabitantes"]
@@ -213,15 +214,14 @@ def update_mapa_tasa(anio):
         children=[
             dl.TileLayer(),
             choropleth,
-            dl.Colorbar(colorscale=cmap, width=20, height=150,
-                        min=min_val, max=max_val,
-                        unit="Tasa por mil hab.")
+            dl.Colorbar(colorscale=cmap.colors, width=20, height=150,
+                        min=min_val, max=max_val, unit="Tasa por mil")
         ],
         style={"width": "100%", "height": "600px"},
         center=[6.5, -75.5], zoom=7
     )
 
-# ---- Mapa Casos ----
+
 @app.callback(
     Output("mapa_casos", "children"),
     Input("anio_casos", "value")
@@ -236,9 +236,10 @@ def update_mapa_casos(anio):
 
     values = df["NumeroCasos"]
     min_val, max_val = values.min(), values.max()
-    cmap = cm.linear.Blues_09.scale(min_val, max_val)  # 🔵 azul gradiente
+    cmap = cm.linear.Blues_09.scale(min_val, max_val)
 
     geojson = json.loads(df.to_json())
+
     for feature in geojson["features"]:
         municipio = feature["properties"]["NombreMunicipio"]
         valor = feature["properties"]["NumeroCasos"]
@@ -255,13 +256,13 @@ def update_mapa_casos(anio):
         children=[
             dl.TileLayer(),
             choropleth,
-            dl.Colorbar(colorscale=cmap, width=20, height=150,
-                        min=min_val, max=max_val,
-                        unit="Número de casos")
+            dl.Colorbar(colorscale=cmap.colors, width=20, height=150,
+                        min=min_val, max=max_val, unit="Número de casos")
         ],
         style={"width": "100%", "height": "600px"},
         center=[6.5, -75.5], zoom=7
     )
+
 
 # ---- Gráficos ----
 @app.callback(
@@ -309,3 +310,4 @@ def plot_top10_casos_bajo(anio):
 # =============================
 if __name__ == "__main__":
     app.run_server(debug=True, host="0.0.0.0", port=8050)
+
