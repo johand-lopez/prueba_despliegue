@@ -7,7 +7,7 @@ import plotly.express as px
 import json
 import numpy as np
 import branca.colormap as cm
-import dash_bootstrap_components as dbc  # 👈 nuevo
+import dash_bootstrap_components as dbc
 
 # =============================
 #   Mortalidad en Antioquia – Dash
