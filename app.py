@@ -5,6 +5,8 @@ import pandas as pd
 import geopandas as gpd
 import plotly.express as px
 import json
+import numpy as np
+import branca.colormap as cm  # para la leyenda
 
 # =============================
 #   Mortalidad en Antioquia – Dash
@@ -164,22 +166,41 @@ def update_summary(_):
 )
 def update_mapa_tasa(anio):
     if anio == "Todos los años":
-        df = df_merge.groupby(["NombreMunicipio", "CodigoMunicipio", "NombreRegion", "geometry"]).agg({
-            "TasaXMilHabitantes": "mean"
-        }).reset_index()
+        df = df_merge.groupby(
+            ["NombreMunicipio", "CodigoMunicipio", "NombreRegion", "geometry"]
+        ).agg({"TasaXMilHabitantes": "mean"}).reset_index()
     else:
         df = df_merge[df_merge["Año"] == anio]
 
+    values = df["TasaXMilHabitantes"]
+    min_val, max_val = values.min(), values.max()
+    cmap = cm.linear.YlOrRd_09.scale(min_val, max_val)
+
     geojson = json.loads(df.to_json())
+
+    for feature in geojson["features"]:
+        municipio = feature["properties"]["NombreMunicipio"]
+        valor = feature["properties"]["TasaXMilHabitantes"]
+        feature["properties"]["tooltip"] = f"{municipio}: {round(valor, 2)}"
+
+    choropleth = dl.GeoJSON(
+        data=geojson,
+        id="geojson_tasa",
+        zoomToBounds=True,
+        options=dict(style=dict(weight=1, opacity=1, color="black", fillOpacity=0.7)),
+    )
 
     return dl.Map(
         children=[
             dl.TileLayer(),
-            dl.GeoJSON(data=geojson, id="geojson_tasa", zoomToBounds=True)
+            choropleth,
+            dl.Colorbar(colorscale=cmap.colors, width=20, height=150,
+                        min=min_val, max=max_val, unit="Tasa por mil")
         ],
         style={"width": "100%", "height": "600px"},
         center=[6.5, -75.5], zoom=7
     )
+
 
 @app.callback(
     Output("mapa_casos", "children"),
@@ -187,24 +208,43 @@ def update_mapa_tasa(anio):
 )
 def update_mapa_casos(anio):
     if anio == "Todos los años":
-        df = df_merge.groupby(["NombreMunicipio", "CodigoMunicipio", "NombreRegion", "geometry"]).agg({
-            "NumeroCasos": "sum"
-        }).reset_index()
+        df = df_merge.groupby(
+            ["NombreMunicipio", "CodigoMunicipio", "NombreRegion", "geometry"]
+        ).agg({"NumeroCasos": "sum"}).reset_index()
     else:
         df = df_merge[df_merge["Año"] == anio]
 
+    values = df["NumeroCasos"]
+    min_val, max_val = values.min(), values.max()
+    cmap = cm.linear.Blues_09.scale(min_val, max_val)
+
     geojson = json.loads(df.to_json())
+
+    for feature in geojson["features"]:
+        municipio = feature["properties"]["NombreMunicipio"]
+        valor = feature["properties"]["NumeroCasos"]
+        feature["properties"]["tooltip"] = f"{municipio}: {int(valor)}"
+
+    choropleth = dl.GeoJSON(
+        data=geojson,
+        id="geojson_casos",
+        zoomToBounds=True,
+        options=dict(style=dict(weight=1, opacity=1, color="black", fillOpacity=0.7)),
+    )
 
     return dl.Map(
         children=[
             dl.TileLayer(),
-            dl.GeoJSON(data=geojson, id="geojson_casos", zoomToBounds=True)
+            choropleth,
+            dl.Colorbar(colorscale=cmap.colors, width=20, height=150,
+                        min=min_val, max=max_val, unit="Número de casos")
         ],
         style={"width": "100%", "height": "600px"},
         center=[6.5, -75.5], zoom=7
     )
 
-# ---- Gráficos Tasa ----
+
+# ---- Gráficos ----
 @app.callback(
     Output("plot_top10_tasa_alta", "figure"),
     Input("anio_top_tasa_alta", "value")
@@ -225,7 +265,6 @@ def plot_top10_tasa_baja(anio):
     return px.bar(df, x="TasaXMilHabitantes", y="NombreMunicipio", orientation="h",
                   title="Top 10 municipios con menor tasa de mortalidad", color="TasaXMilHabitantes")
 
-# ---- Gráficos Casos ----
 @app.callback(
     Output("plot_top10_casos_alto", "figure"),
     Input("anio_top_casos_alto", "value")
